@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Game Asset Generator</title>
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --panel-bg: #1a1a1a;
+            --accent: #00ff88;
+            --info: #00d4ff;
+            --text: #e0e0e0;
+            --error: #ff4444;
+            --border: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-top: 0;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        input[type="text"], input[type="number"], textarea, input[type="password"] {
+            width: 100%;
+            background-color: #000;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px;
+            font-family: inherit;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .hint {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* Token Status Box */
+        #auth-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 2px;
+            display: none;
+            background-color: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--info);
+            color: var(--info);
+        }
+
+        /* Model Selector Grid */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .model-card {
+            background-color: #000;
+            border: 2px solid var(--border);
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            image-rendering: pixelated;
+        }
+
+        .model-card:hover {
+            border-color: #555;
+        }
+
+        .model-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
+        }
+
+        .model-card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .model-card p {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin: 0;
+        }
+
+        /* Radio Buttons for Styles */
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: normal;
+        }
+
+        .radio-label input[type="radio"] {
+            accent-color: var(--accent);
+        }
+
+        #sub-style-panel {
+            padding-left: 20px;
+            border-left: 2px solid var(--border);
+        }
+
+        /* Size Inputs */
+        .size-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .preset-btn {
+            background: #000;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .notice {
+            color: #ffaa00;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Action Button */
+        .btn-generate {
+            width: 100%;
+            background-color: var(--accent);
+            color: #000;
+            border: none;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: inherit;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            box-shadow: 0 0 15px var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .btn-generate:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Output Area */
+        #status-area {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            color: var(--accent);
+            min-height: 24px;
+        }
+
+        #error-area {
+            display: none;
+            background-color: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 2px;
+        }
+
+        .output-section {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .output-box {
+            display: inline-block;
+            background: #000;
+            border: 2px dashed var(--border);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .output-label {
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .canvas-container {
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAACVJREFUKFNjZCASMDKhuJqB4T8DQwPTBFA2wyjEBVCDI4pBgwEAawQEAo/r2B8AAAAASUVORK5CYII=');
+            display: inline-block;
+            border: 1px solid #333;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        img.raw-img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .download-btn {
+            background: #000;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background: var(--accent);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>[ Pixel Asset Gen ]</h1>
+
+    <div class="panel">
+        <label for="hf-token">Hugging Face API Token</label>
+        <input type="password" id="hf-token" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        <span class="hint">Get your free token at <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> (no credit card needed).</span>
+        <div id="auth-status">⏳ Token saved — will be confirmed on first generation</div>
+    </div>
+
+    <div class="panel">
+        <label>Select AI Model</label>
+        <div class="model-grid" id="model-grid">
+            <div class="model-card active" data-model="PublicPrompts/All-In-One-Pixel-Model">
+                <h3>PublicPrompts / All-In-One-Pixel-Model</h3>
+                <p>Best for sprites & 16-bit scenes (use trigger words: pixelsprite or 16bitscene)</p>
+            </div>
+            <div class="model-card" data-model="Onodofthenorth/SD_PixelArt_SpriteSheet_Generator">
+                <h3>Onodofthenorth / SD_PixelArt_SpriteSheet_Generator</h3>
+                <p>Generates sprite sheets from multiple angles, ideal for characters</p>
+            </div>
+            <div class="model-card" data-model="stabilityai/stable-diffusion-xl-base-1.0">
+                <h3>stabilityai / stable-diffusion-xl-base-1.0</h3>
+                <p>General purpose, high quality, good for backgrounds and tilesets</p>
+            </div>
+            <div class="model-card" data-model="black-forest-labs/FLUX.1-schnell">
+                <h3>black-forest-labs / FLUX.1-schnell</h3>
+                <p>Fastest generation, great for quick iteration on asset ideas</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <label for="prompt-input">Asset Description (Prompt)</label>
+        <textarea id="prompt-input" rows="4" placeholder="e.g. pixelsprite a lone knight holding a glowing sword..."></textarea>
+        <span class="hint" style="margin-bottom: 20px;">Tip: for the Pixel Model, start your prompt with 'pixelsprite' for characters or '16bitscene' for backgrounds.</span>
+
+        <label>Style Modifiers</label>
+        <div class="radio-group">
+            <label class="radio-label"><input type="radio" name="dimension" value="2D" checked onchange="toggleDim()"> 2D</label>
+            <label class="radio-label"><input type="radio" name="dimension" value="3D" onchange="toggleDim()"> 3D</label>
+        </div>
+
+        <div id="sub-style-panel" class="radio-group">
+            <label class="radio-label"><input type="radio" name="substyle" value="Platformer" checked> Platformer</label>
+            <label class="radio-label"><input type="radio" name="substyle" value="Top-Down"> Top-Down</label>
+        </div>
+    </div>
+
+    <div class="panel">
+        <label>Final Export Size (Pixels)</label>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="setPresetSize(16)">16×16</button>
+            <button class="preset-btn" onclick="setPresetSize(32)">32×32</button>
+            <button class="preset-btn" onclick="setPresetSize(64)">64×64</button>
+            <button class="preset-btn" onclick="setPresetSize(128)">128×128</button>
+            <button class="preset-btn" onclick="setPresetSize(256)">256×256</button>
+        </div>
+
+        <div class="size-grid">
+            <div>
+                <label for="out-width">Width</label>
+                <input type="number" id="out-width" value="64" min="16" max="2048" step="16" oninput="handleSizeInput('w')" onblur="handleSizeBlur('w')">
+                <div id="hint-w" class="hint"></div>
+                <div id="notice-w" class="notice">Auto-corrected to nearest valid size.</div>
+            </div>
+            <div>
+                <label for="out-height">Height</label>
+                <input type="number" id="out-height" value="64" min="16" max="2048" step="16" oninput="handleSizeInput('h')" onblur="handleSizeBlur('h')">
+                <div id="hint-h" class="hint"></div>
+                <div id="notice-h" class="notice">Auto-corrected to nearest valid size.</div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-generate" class="btn-generate" disabled>Generate Asset</button>
+    <div id="status-area"></div>
+    <div id="error-area"></div>
+
+    <div id="output-section" class="output-section">
+        <div class="output-box">
+            <div class="output-label">Generated — 512×512</div>
+            <img id="raw-image" class="raw-img" src="" alt="Raw Output">
+            <button class="download-btn" onclick="downloadRaw()">Download 512×512 PNG</button>
+        </div>
+        <br>
+        <div class="output-box">
+            <div id="scaled-label" class="output-label">Exported — WxH (Nearest-Neighbor)</div>
+            <div class="canvas-container">
+                <canvas id="scaled-canvas"></canvas>
+            </div>
+            <br>
+            <button class="download-btn" onclick="downloadCanvas()">Download Pixel-Perfect PNG</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* --- State & DOM Elements --- */
+    let selectedModel = "PublicPrompts/All-In-One-Pixel-Model";
+    
+    const tokenInput = document.getElementById('hf-token');
+    const authStatus = document.getElementById('auth-status');
+    const btnGenerate = document.getElementById('btn-generate');
+    const statusArea = document.getElementById('status-area');
+    const errorArea = document.getElementById('error-area');
+    const outputSection = document.getElementById('output-section');
+    const rawImage = document.getElementById('raw-image');
+    const scaledCanvas = document.getElementById('scaled-canvas');
+    const ctx = scaledCanvas.getContext('2d');
+
+    /* --- Authentication / Token Input Handling --- */
+    tokenInput.addEventListener('input', () => {
+        btnGenerate.disabled = tokenInput.value.trim() === "";
+        authStatus.style.display = 'none';
+    });
+
+    tokenInput.addEventListener('blur', () => {
+        if (tokenInput.value.trim() !== "") {
+            authStatus.style.display = 'block';
+        } else {
+            authStatus.style.display = 'none';
+        }
+    });
+
+    /* --- Model Selection --- */
+    document.querySelectorAll('.model-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            selectedModel = this.getAttribute('data-model');
+        });
+    });
+
+    /* --- UI Functions --- */
+    function toggleDim() {
+        const is2D = document.querySelector('input[name="dimension"]:checked').value === '2D';
+        document.getElementById('sub-style-panel').style.display = is2D ? 'flex' : 'none';
+    }
+
+    function sanitizeSize(value) {
+        let num = parseInt(value);
+        if (isNaN(num)) return 64;
+        num = Math.floor(num / 16) * 16;
+        if (num < 16) return 16;
+        if (num > 2048) return 2048;
+        return num;
+    }
+
+    function handleSizeInput(axis) {
+        const inputEl = document.getElementById(axis === 'w' ? 'out-width' : 'out-height');
+        const hintEl = document.getElementById(axis === 'w' ? 'hint-w' : 'hint-h');
+        const sanitized = sanitizeSize(inputEl.value);
+        hintEl.textContent = `Nearest valid: ${sanitized}`;
+    }
+
+    function handleSizeBlur(axis) {
+        const inputEl = document.getElementById(axis === 'w' ? 'out-width' : 'out-height');
+        const noticeEl = document.getElementById(axis === 'w' ? 'notice-w' : 'notice-h');
+        document.getElementById(`hint-${axis}`).textContent = '';
+        
+        const originalVal = inputEl.value;
+        const newVal = sanitizeSize(originalVal);
+        
+        if (originalVal !== newVal.toString()) {
+            inputEl.value = newVal;
+            noticeEl.style.display = 'block';
+            setTimeout(() => { noticeEl.style.display = 'none'; }, 3000);
+        }
+    }
+
+    function setPresetSize(size) {
+        document.getElementById('out-width').value = size;
+        document.getElementById('out-height').value = size;
+    }
+
+    /* --- Generation Logic --- */
+    btnGenerate.addEventListener('click', generateAsset);
+
+    async function generateAsset() {
+        const promptText = document.getElementById('prompt-input').value.trim();
+        const token = tokenInput.value.trim();
+        
+        if (!promptText) {
+            showError("Please enter a prompt describing your asset.");
+            return;
+        }
+
+        // Build prompt suffix
+        let suffix = "";
+        const dim = document.querySelector('input[name="dimension"]:checked').value;
+        if (dim === "3D") {
+            suffix = ", 3D rendered game asset, isometric view, clean background";
+        } else {
+            const subStyle = document.querySelector('input[name="substyle"]:checked').value;
+            suffix = subStyle === "Platformer" 
+                ? ", 2D side-view platformer sprite, pixel art, clean transparent background, game asset"
+                : ", 2D top-down game asset, pixel art, flat perspective, transparent background";
+        }
+
+        const finalPrompt = promptText + suffix;
+        const targetW = sanitizeSize(document.getElementById('out-width').value);
+        const targetH = sanitizeSize(document.getElementById('out-height').value);
+
+        errorArea.style.display = 'none';
+        outputSection.style.display = 'none';
+        btnGenerate.disabled = true;
+        
+        let success = false;
+        
+        while (!success) {
+            statusArea.textContent = `Generating with ${selectedModel.split('/').pop()}...`;
+            
+            try {
+                const response = await fetch(`https://api-inference.huggingface.co/models/${selectedModel}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ inputs: finalPrompt, parameters: { width: 512, height: 512 } })
+                });
+
+                // Handle Auth Errors immediately
+                if (response.status === 401) {
+                    showError("✗ Invalid token — please check your token at huggingface.co/settings/tokens");
+                    break;
+                }
+                if (response.status === 403) {
+                    showError("✗ Token lacks inference permissions — use a Read type token");
+                    break;
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.estimated_time) {
+                        await handleLoadingCountdown(data.estimated_time);
+                        continue; 
+                    } else {
+                        showError(`API Error: ${data.error || "Unknown Error"}`);
+                        break;
+                    }
+                }
+
+                if (!response.ok) {
+                    showError(`HTTP ${response.status}: ${response.statusText}`);
+                    break;
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                
+                rawImage.onload = () => {
+                    downscaleImage(rawImage, targetW, targetH);
+                    statusArea.textContent = 'Generation Complete!';
+                    setTimeout(() => statusArea.textContent = '', 3000);
+                };
+                rawImage.src = objectUrl;
+                outputSection.style.display = 'block';
+                success = true;
+
+            } catch (err) {
+                showError(`Network/CORS Error: Ensure your token is correct and you have an internet connection.`);
+                break;
+            }
+        }
+        btnGenerate.disabled = false;
+    }
+
+    async function handleLoadingCountdown(time) {
+        let remaining = Math.ceil(time);
+        while (remaining > 0) {
+            statusArea.textContent = `Model is loading, retrying in ${remaining}s...`;
+            await new Promise(r => setTimeout(r, 1000));
+            remaining--;
+        }
+    }
+
+    function downscaleImage(img, width, height) {
+        document.getElementById('scaled-label').textContent = `Exported — ${width}x${height} (Nearest-Neighbor)`;
+        scaledCanvas.width = width;
+        scaledCanvas.height = height;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, width, height);
+    }
+
+    function showError(msg) {
+        errorArea.textContent = msg;
+        errorArea.style.display = 'block';
+        statusArea.textContent = '';
+    }
+
+    function downloadRaw() {
+        const a = document.createElement('a');
+        a.href = rawImage.src;
+        a.download = `pixel_raw_${Date.now()}.png`;
+        a.click();
+    }
+
+    function downloadCanvas() {
+        const a = document.createElement('a');
+        a.href = scaledCanvas.toDataURL("image/png");
+        a.download = `pixel_asset_${scaledCanvas.width}x${scaledCanvas.height}_${Date.now()}.png`;
+        a.click();
+    }
+</script>
+</body>
+</html>
