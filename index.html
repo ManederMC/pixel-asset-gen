@@ -414,13 +414,21 @@
 
     /* --- Authentication / Token Input Handling --- */
     tokenInput.addEventListener('input', () => {
-        btnGenerate.disabled = tokenInput.value.trim() === "";
-        authStatus.style.display = 'none';
+        const hasToken = tokenInput.value.trim() !== "";
+        btnGenerate.disabled = !hasToken;
+        if (!hasToken) {
+            authStatus.style.display = 'none';
+        }
     });
 
     tokenInput.addEventListener('blur', () => {
-        if (tokenInput.value.trim() !== "") {
+        const token = tokenInput.value.trim();
+        if (token !== "") {
             authStatus.style.display = 'block';
+            authStatus.style.backgroundColor = 'rgba(0, 212, 255, 0.1)';
+            authStatus.style.borderColor = 'var(--info)';
+            authStatus.style.color = 'var(--info)';
+            authStatus.textContent = '⏳ Token saved — will be confirmed on first generation';
         } else {
             authStatus.style.display = 'none';
         }
@@ -564,7 +572,7 @@
                 success = true;
 
             } catch (err) {
-                showError(`Network/CORS Error: Ensure your token is correct and you have an internet connection.`);
+                showError(`❌ Request failed: ${err.message}. Check your internet connection and make sure your Hugging Face token is correct.`);
                 break;
             }
         }
